@@ -1,0 +1,60 @@
+Parameters:
+  myVPC:
+    Description: VPC used to deploy resources
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-03316aeac121b2040
+  PublicSubnet:
+    Description: Subnet to be used for web server
+    Type: AWS::EC2::Subnet::Id
+    Default: subnet-02aef473615862cc3
+  AMItoUse:
+    Description: AMI to use for base image
+    Type: String
+    Default: ami-090fa75af13c156b4
+  InstancetoUse:
+    Description: Instance type for web server
+    Type: String
+    Default: t2.micro
+  SecurityGroup:
+    Description: Security Group for web server
+    Type: String
+    Default: myWebAccessSecurityGroup
+  
+Resources:
+  myWebAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: myWebAccessSecurityGroup
+      VpcId: !Ref myVPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        FromPort: -1
+        ToPort: -1
+        CidrIp: 0.0.0.0/0
+
+  myWebServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId : !Ref AMItoUse
+      InstanceType: !Ref InstancetoUse
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "myWebAccessSecurityGroup"
+          SubnetId: 
+            Ref: "PublicSubnet"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install -y httpd
+          sudo systemctl start httpd
+          sudo systemctl enable httpd
+
+
